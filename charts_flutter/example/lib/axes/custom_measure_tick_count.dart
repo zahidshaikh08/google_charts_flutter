@@ -20,6 +20,7 @@
 /// how 'nice' the ticks are) or [desiredTickCount] for a fixed tick count.
 // EXCLUDE_FROM_GALLERY_DOCS_START
 import 'dart:math';
+
 // EXCLUDE_FROM_GALLERY_DOCS_END
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
@@ -74,17 +75,20 @@ class CustomMeasureTickCount extends StatelessWidget {
       )
     ];
   }
+
   // EXCLUDE_FROM_GALLERY_DOCS_END
 
   @override
   Widget build(BuildContext context) {
     return new charts.TimeSeriesChart(seriesList,
         animate: animate,
+        defaultRenderer: charts.LineRendererConfig(
+          smoothLine: true,
+        ),
 
         /// Customize the measure axis to have 2 ticks,
         primaryMeasureAxis: new charts.NumericAxisSpec(
-            tickProviderSpec:
-                new charts.BasicNumericTickProviderSpec(desiredTickCount: 2)));
+            tickProviderSpec: new charts.BasicNumericTickProviderSpec(desiredTickCount: 2)));
   }
 
   /// Create one series with sample hard coded data.
@@ -118,5 +122,6 @@ class CustomMeasureTickCount extends StatelessWidget {
 class MyRow {
   final DateTime timeStamp;
   final int cost;
+
   MyRow(this.timeStamp, this.cost);
 }

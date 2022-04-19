@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import 'dart:math' show Point, Rectangle;
+import 'package:charts_flutter/src/util/monotex.dart';
 import 'package:flutter/material.dart';
 import 'package:charts_common/common.dart' as common show Color;
 
@@ -37,6 +38,7 @@ class PolygonPainter {
       Rectangle<num>? clipBounds,
       common.Color? fill,
       common.Color? stroke,
+      bool? smoothLine,
       double? strokeWidthPx}) {
     if (points.isEmpty) {
       return;
@@ -46,20 +48,13 @@ class PolygonPainter {
     if (clipBounds != null) {
       canvas
         ..save()
-        ..clipRect(new Rect.fromLTWH(
-            clipBounds.left.toDouble(),
-            clipBounds.top.toDouble(),
-            clipBounds.width.toDouble(),
-            clipBounds.height.toDouble()));
+        ..clipRect(new Rect.fromLTWH(clipBounds.left.toDouble(), clipBounds.top.toDouble(),
+            clipBounds.width.toDouble(), clipBounds.height.toDouble()));
     }
 
-    final strokeColor = stroke != null
-        ? new Color.fromARGB(stroke.a, stroke.r, stroke.g, stroke.b)
-        : null;
+    final strokeColor = stroke != null ? new Color.fromARGB(stroke.a, stroke.r, stroke.g, stroke.b) : null;
 
-    final fillColor = fill != null
-        ? new Color.fromARGB(fill.a, fill.r, fill.g, fill.b)
-        : null;
+    final fillColor = fill != null ? new Color.fromARGB(fill.a, fill.r, fill.g, fill.b) : null;
 
     // If the line has a single point, draw a circle.
     if (points.length == 1) {
@@ -68,8 +63,7 @@ class PolygonPainter {
         paint.color = fillColor;
       }
       paint.style = PaintingStyle.fill;
-      canvas.drawCircle(new Offset(point.x.toDouble(), point.y.toDouble()),
-          strokeWidthPx!, paint);
+      canvas.drawCircle(new Offset(point.x.toDouble(), point.y.toDouble()), strokeWidthPx!, paint);
     } else {
       if (strokeColor != null && strokeWidthPx != null) {
         paint.strokeWidth = strokeWidthPx;
@@ -82,14 +76,34 @@ class PolygonPainter {
         paint.style = PaintingStyle.fill;
       }
 
-      final path = new Path()
-        ..moveTo(points.first.x.toDouble(), points.first.y.toDouble());
+      final path = new Path();
+      if (smoothLine ?? false) {
+        if (points[0].y == points[1].y && points[1].x == points[2].x) {
+          path.moveTo(points.last.x.toDouble(), points.last.y.toDouble());
+          path.lineTo(points[0].x.toDouble(), points[0].y.toDouble());
+          path.lineTo(points[1].x.toDouble(), points[1].y.toDouble());
+          path.lineTo(points[2].x.toDouble(), points[2].y.toDouble());
+          MonotoneX.addCurve(path, points.sublist(2));
+        } else {
+          path.moveTo(points.last.x.toDouble(), points.last.y.toDouble());
+          path.lineTo(points[0].x.toDouble(), points[0].y.toDouble());
 
-      for (var point in points) {
-        path.lineTo(point.x.toDouble(), point.y.toDouble());
+          MonotoneX.addCurve(path, points.sublist(0, points.length ~/ 2).reversed.toList(), true);
+          path.lineTo(points[points.length ~/ 2].x.toDouble(), points[points.length ~/ 2].y.toDouble());
+
+          MonotoneX.addCurve(path, points.sublist(points.length ~/ 2));
+
+          path.lineTo(points.last.x.toDouble(), points.last.y.toDouble());
+        }
+      } else {
+        path.moveTo(points.first.x.toDouble(), points.first.y.toDouble());
+        for (var point in points) {
+          path.lineTo(point.x.toDouble(), point.y.toDouble());
+        }
       }
 
       canvas.drawPath(path, paint);
+      paint.shader = null;
     }
 
     if (clipBounds != null) {
